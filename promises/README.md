@@ -40,7 +40,7 @@ loadScript('/my/script.js', function() {
 
 De esta manera con "callbacks" solucionamos el problema.
 
-<h1>Llamando callback en callback</h1>
+<h2>Llamando callback en callback</h2>
 
 Siguiendo el ejemplo anterior, ¿Si ahora queremos cargar un script más después del primero? Se le pasa como callback dentro de la callback del primero:
 
@@ -57,7 +57,9 @@ De esta manera nos aseguramos de que el segundo se ejecuta después del primero,
 
 ```javascript
 loadScript('/my/script.js', function(script) {
+  // Algo
   loadScript('/my/script2.js', function(script) {
+    // Algo
     loadScript('/my/script3.js', function(script) {
       // Algo
     });
@@ -66,3 +68,38 @@ loadScript('/my/script.js', function(script) {
 ```
 
 Y asi sucesivamente si queremos cargar mas scripts uno detras de otro.
+
+<h2>Manejo de errores</h2>
+
+En el ejemplo anterio no tuvimos en cuenta que pudiera ocurrir algún error. Deberiamos dotar a nuestro programa de un manejo de errores.
+
+```javascript
+function loadScript(src, callback) {
+  let script = document.createElement('script');
+  script.src = src;
+
+  script.onload = () => callback(null, script);
+  script.onerror = () => callback(new Error(`Script load error for ${src}`)); // Si ocurre algún error
+
+  document.head.append(script);
+}
+```
+
+ - Si carga el script, pasamos como parámetro de error un null y el objeto script.
+ - Si existe algún error, pasamos un objeto Error.
+
+```javascript
+loadScript('/my/script.js', function(error, script) {
+  if (error) {
+    // manejo de error
+  } else {
+    // El script se cargó correctamente
+  }
+});
+```
+
+Con un "if else", si error no es nulo, manejamos nuestro error, lo imprimimos por pantalla y paramos el programa, etc. si es nulo, continuamos como queremos.
+
+Esto es llamado "[error-first callback](https://nodejs.org/api/errors.html#errors_error_first_callbacks)", un convenio en javascript.
+
+<h2>"Piramid of Doom"</h2>
