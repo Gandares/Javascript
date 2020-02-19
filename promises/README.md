@@ -186,3 +186,70 @@ let promise = new Promise(function(resolve, reject) {
 
 Es recomendado que el reject devuelva un objeto Error para el manejo de errores.
 
+<h2>then, catch, finally</h2>
+
+Como se dijo anteriormente, resolve y reject son "callback" lo que quiere decir que cuando son llamados, depende de uno u otro harán distintas cosas(depende de como queramos).
+
+Las funciones son .then() para el resolve, .catch() para el reject y .finally(), que esta se ejecuta tanto si es un resolve o un reject.
+
+La sintaxis del .then():
+
+```javascript
+let promise = new Promise((resolve, reject) => {
+  setTimeout(() => reject(new Error("Whoops!")), 1000);
+});
+
+promise.then(
+  function(result) { /* Manejo de una ejecución satisfactoria */ },
+  function(error) { /* Manejo de errores */ }
+);
+```
+En este ejemplo también se usa el .then() para el manejo de errores, aunque para eso existe el .catch().
+
+La sintaxis del .catch():
+
+```javascript
+let promise = new Promise((resolve, reject) => {
+  setTimeout(() => reject(new Error("Whoops!")), 1000);
+});
+
+// .catch(f) es lo mismo que promise.then(null, f)
+promise.catch(alert); // Muestra "Error: Whoops!" después de 1 segundo
+```
+
+La sintaxis del .finally():
+
+```javascript
+new Promise((resolve, reject) => {
+  // Hacer algo y llamar a reject o resolve
+})
+  // Se ejecuta da igual si es reject o resolve
+  .finally(() => stop loading indicator)
+  .then(result => show result, err => show error)
+```
+
+.finally(f) es equivalente a .then(f,f) y es un buen controlador para realizar limpieza a variables y no lleva argumentos.
+
+Ahora realizando el ejemplo del loadScript() con promesas sería de la siguiente manera:
+
+```javascript
+function loadScript(src) {
+  return new Promise(function(resolve, reject) {
+    let script = document.createElement('script');
+    script.src = src;
+
+    script.onload = () => resolve(script);
+    script.onerror = () => reject(new Error(`Script load error for ${src}`));
+
+    document.head.append(script);
+  });
+}
+```
+
+```javascript
+let promise = loadScript("https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.js");
+
+promise
+      .then( script => alert(`${script.src} is loaded!`)
+      .catch( error => alert(`Error: ${error.message}`);
+```
