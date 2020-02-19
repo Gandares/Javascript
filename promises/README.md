@@ -135,3 +135,20 @@ loadScript('1.js', function(error, script) {
 Esto es llamado "Callback hell" o "Piramid of Doom" por el hecho por cada acción asíncrona identa hacia la derecha. Esto pronto se sale de control. No es una buena técnica de programación cuando se tienen muchos "callbacks" anidados.
 
 Existen técnicas para evirtar esto, pero una de las mejores son las promesas.
+
+
+<h1>Promesas</h1>
+
+La promesa es un objeto que representa la terminación o el fracaso eventual de una operación asíncrona. Es creada de la siguiente manera:
+
+```javascript
+let promise = new Promise(function(resolve, reject) {
+  // Algo
+});
+```
+
+La función pasada a "Promise" es llamada el ejecutor y esta recibe dos parámetros que son "callbacks" a su vez. Resolve correrá cuando el programa acabe de forma satisfactoria -> resolve(value), y reject si acaba con un error o excepción -> reject(error).
+
+Lo que se declara dentro de la promesa debe ser un código asíncrono el cual se quiera testear, si llegamos a un punto en el que ya sepamos que acabó de manera satisfactoria, le indicamos que llame a resolve y en caso contrario a reject.
+
+![Html](https://javascript.info/article/promise-basics/promise-resolve-reject.svg)
