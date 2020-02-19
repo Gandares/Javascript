@@ -39,3 +39,30 @@ loadScript('/my/script.js', function() {
 ```
 
 De esta manera con "callbacks" solucionamos el problema.
+
+<h1>Llamando callback en callback</h1>
+
+Siguiendo el ejemplo anterior, ¿Si ahora queremos cargar un script más después del primero? Se le pasa como callback dentro de la callback del primero:
+
+```javascript
+loadScript('/my/script.js', function(script) {
+  alert(`Cool, the ${script.src} is loaded, let's load one more`);
+  loadScript('/my/script2.js', function(script) {
+    alert(`Cool, the second script is loaded`);
+  });
+});
+```
+
+De esta manera nos aseguramos de que el segundo se ejecuta después del primero, ¿Que pasaría si queremos un tercero?
+
+```javascript
+loadScript('/my/script.js', function(script) {
+  loadScript('/my/script2.js', function(script) {
+    loadScript('/my/script3.js', function(script) {
+      // Algo
+    });
+  });
+});
+```
+
+Y asi sucesivamente si queremos cargar mas scripts uno detras de otro.
