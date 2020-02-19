@@ -152,3 +152,37 @@ La función pasada a "Promise" es llamada el ejecutor y esta recibe dos parámet
 Lo que se declara dentro de la promesa debe ser un código asíncrono el cual se quiera testear, si llegamos a un punto en el que ya sepamos que acabó de manera satisfactoria, le indicamos que llame a resolve y en caso contrario a reject.
 
 ![Html](https://javascript.info/article/promise-basics/promise-resolve-reject.svg)
+
+Un ejemplo es el siguiente:
+
+```javascript
+let promise = new Promise(function(resolve, reject) {
+  setTimeout(() => resolve("done"), 1000);
+});
+```
+La función se ejecuta automaticamente cuando la promesa es construida. Después de 1 segundo se indicará que acabó correctamente con resolve pasando como parámetro "done".
+
+Ahora un ejemplo parecido, pero acabando con un error:
+
+```javascript
+let promise = new Promise(function(resolve, reject) {
+  setTimeout(() => reject(new Error("Whoops!")), 1000);
+});
+```
+
+De esta manera, después de 1 segundo indicará que hubo un error con reject pasando como argumento "Whoops!".
+
+Cuidado a la hora de colocar en la promesa los reject y los resolve, porque una vez se llegue a uno de ellos, el resto de la promesa será ignorada dado que solo puede haber un resultado posible:
+
+
+```javascript
+let promise = new Promise(function(resolve, reject) {
+  resolve("done");
+
+  reject(new Error("…")); // Se ignora
+  setTimeout(() => resolve("…")); // Se ignora
+});
+```
+
+Es recomendado que el reject devuelva un objeto Error para el manejo de errores.
+
