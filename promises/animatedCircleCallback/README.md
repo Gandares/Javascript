@@ -1,0 +1,9 @@
+# Animated circle with callback
+
+In the task Animated circle an animated growing circle is shown.
+
+Now let’s say we need not just a circle, but to show a message inside it. The message should appear after the animation is complete (the circle is fully grown), otherwise it would look ugly.
+
+In the solution of the task, the function showCircle(cx, cy, radius) draws the circle, but gives no way to track when it’s ready.
+
+Add a callback argument: showCircle(cx, cy, radius, callback) to be called when the animation is complete. The callback should receive the circle < div > as an argument.
