@@ -103,3 +103,35 @@ Con un "if else", si error no es nulo, manejamos nuestro error, lo imprimimos po
 Esto es llamado "[error-first callback](https://nodejs.org/api/errors.html#errors_error_first_callbacks)", un convenio en javascript.
 
 <h2>"Piramid of Doom"</h2>
+
+Utilizar "callbacks" repetidas veces, a primera vista, parece una manera viable de resolver la asincronía, pero cuando tenemos anidados muchos callbacks, el programa puede ser difícil de manejar:
+
+```javascript
+loadScript('1.js', function(error, script) {
+
+  if (error) {
+    handleError(error);
+  } else {
+    // ...
+    loadScript('2.js', function(error, script) {
+      if (error) {
+        handleError(error);
+      } else {
+        // ...
+        loadScript('3.js', function(error, script) {
+          if (error) {
+            handleError(error);
+          } else {
+            // ...continue after all scripts are loaded (*)
+          }
+        });
+
+      }
+    })
+  }
+});
+```
+
+Esto es llamado "Callback hell" o "Piramid of Doom" por el hecho por cada acción asíncrona identa hacia la derecha. Esto pronto se sale de control. No es una buena técnica de programación cuando se tienen muchos "callbacks" anidados.
+
+Existen técnicas para evirtar esto, pero una de las mejores son las promesas.
