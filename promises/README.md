@@ -461,7 +461,7 @@ fetch('/ruta/hacia/archivo/algo.json')
 Ahora hagamos un fetch a un archivo .json que contenga mi nombre de usuario de github y mostremos la foto de perfil.
 
 ```javascript
-// Make a request for user.json
+// hace una petición para user.json
 fetch('/ruta/hacia/archivo/algo.json')
   // Lo carga como un json
   .then(response => response.json())
@@ -483,7 +483,7 @@ fetch('/ruta/hacia/archivo/algo.json')
 ¿Como podemos mostrar algo después de que la imagen desaparezca? Para hacerlo, debemos retornar otra promesa cuando la imagen se borre.
 
 ```javascript
-fetch('/article/promise-chaining/user.json')
+fetch('/ruta/hacia/archivo/algo.json')
   .then(response => response.json())
   .then(user => fetch(`https://api.github.com/users/${user.name}`))
   .then(response => response.json())
@@ -530,10 +530,158 @@ function showAvatar(githubUser) {
 }
 
 // Use them:
-loadJson('/article/promise-chaining/user.json')
+loadJson('/ruta/hacia/archivo/algo.json')
   .then(user => loadGithubUser(user.name))
   .then(showAvatar)
   .then(githubUser => alert(`Finished showing ${githubUser.name}`));
 ```
 
 En resumen, si un manejador retorna una promesa, el resto de la cadena espera hasta que se resuelva y el resultado o error se pasa.
+
+<h1>Manejando errores con promesas</h1>
+
+Las cadenas de promesas son buenos a la hora del manejo de errores, principalmente porque el .catch no tiene porque ir immediatamente, puede ir despues de varios .then.
+
+```
+fetch('/ruta/hacia/archivo/algo.json')
+  .then(response => response.json())
+  .then(user => fetch(`https://api.github.com/users/${user.name}`))
+  .then(response => response.json())
+  .then(githubUser => new Promise((resolve, reject) => {
+    let img = document.createElement('img');
+    img.src = githubUser.avatar_url;
+    img.className = "promise-avatar-example";
+    document.body.append(img);
+
+    setTimeout(() => {
+      img.remove();
+      resolve(githubUser);
+    }, 3000);
+  }))
+  .catch(error => alert(error.message));
+```
+
+Normalmente ese .catch no se activaría pero si alguna de las promesas de arriba realiza un reject, entonces sí.
+
+<h2>try...catch implícito</h2>
+
+El código de un ejecutor y de los manejadores de las promesas tiene un try...catch "invisible" y si ocurre una excepción queda atrapada y lo trata como un rechazo.
+
+```javascript
+new Promise((resolve, reject) => {
+  throw new Error("Whoops!");
+}).catch(alert); // Error: Whoops!
+```
+
+Ese código trabaja de la misma manera que este:
+
+```javascript
+new Promise((resolve, reject) => {
+  reject(new Error("Whoops!"));
+}).catch(alert); // Error: Whoops!
+```
+
+El ejecutor detecta el error automáticamente y lo transforma en un "reject" y esto también ocurre con los manejadores. Si realizamos un "throw" dentro de un .then, lo toma como un rechazo.
+
+```javascript
+new Promise((resolve, reject) => {
+  resolve("ok");
+}).then((result) => {
+  throw new Error("Whoops!"); // rejects the promise
+}).catch(alert); // Error: Whoops!
+```
+
+Además, no solo tiene que ser un throw, también puede ser por un error de programación:
+
+```javascript
+new Promise((resolve, reject) => {
+  resolve("ok");
+}).then((result) => {
+  blabla(); // No existe la función
+}).catch(alert); // ReferenceError: blabla is not defined
+```
+
+El último .catch no solo caza errores explícitos, también errores accidentales.
+
+<h2>Rethrowing</h2>
+
+En un try...catch podemos analizar los errores y quizás "rethrow" si no pueden ser manejados. Con las promesas se puede hacer lo mismo. Si lanzamos un "throw" dentro de un .catch, el error será lanzado al siguiente manejador de errores más cercano. Y si lo logramos manejar, podemos mandarlo al siguiente .then.
+
+```javascript
+// Ejecución: catch -> then
+new Promise((resolve, reject) => {
+
+  throw new Error("Whoops!");
+
+}).catch(function(error) {
+
+  alert("The error is handled, continue normally");
+
+}).then(() => alert("Next successful handler runs"));
+```
+
+En este caso, el error es manejado y el programa continua de manera normal.
+
+En el siguiente ejemplo se da el caso en el que se caza un error y no es posible manejarlo, asi que se lanza al siguiente .catch:
+
+```javascript
+// ejecución: catch -> catch
+new Promise((resolve, reject) => {
+
+  throw new Error("Whoops!");
+
+}).catch(function(error) { // (*)
+
+  if (error instanceof URIError) {
+    // Manejarlo
+  } else {
+    alert("Can't handle such error");
+
+    throw error; // Lanzar al siguiente .catch
+  }
+
+}).then(function() {
+  /* No se ejecuta */
+}).catch(error => { // (**)
+
+  alert(`The unknown error has occurred: ${error}`);
+
+});
+```
+
+<h2>Rechazos sin manejar</h2>
+
+¿Que ocurre cuando un error no es manejado?
+
+```javascript
+new Promise(function() {
+  noSuchFunction(); // Error, no existe la función
+})
+  .then(() => {
+    // Resolve
+  }); // No existe .catch al final
+```
+
+En caso de error, la promesa se rechaza y la ejecución debe saltar al controlador de rechazo más cercano. Pero no hay ninguno. Entonces el error se "atasca". No hay código para manejarlo.
+
+En la práctica, al igual que con los errores regulares no controlados en el código, significa que algo ha salido terriblemente mal.
+
+¿Qué sucede cuando ocurre un error regular y no es detectado por try..catch? El script muere con un mensaje en la consola. Algo similar sucede con los rechazos de promesas no controladas.
+
+El motor de JavaScript rastrea tales rechazos y genera un error global en ese caso. Se puede ver en la consola.
+
+En el buscador podemos cazar esos errores utilizando "unhandledrejection":
+
+```javascript
+window.addEventListener('unhandledrejection', function(event) {
+  // Dos propiedades especiales:
+  alert(event.promise); // [object Promise] - La promesa que generó el error
+  alert(event.reason); // Error: Whoops! - El objeto Error que no se pudo manejar
+});
+
+new Promise(function() {
+  throw new Error("Whoops!");
+}); // No .catch
+```
+
+Al no existir un .catch, "unhandledrejection" se activa. Normalmente estos errores no se pueden recuperar, así que lo mejor es informar del fallo. En entornos sin buscador como Node.js hay otras maneras de cazar estos errores.
