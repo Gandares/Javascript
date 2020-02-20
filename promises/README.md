@@ -253,3 +253,151 @@ promise
       .then( script => alert(`${script.src} is loaded!`)
       .catch( error => alert(`Error: ${error.message}`);
 ```
+
+<h1>Encadenando promesas</h1>
+
+Volviendo al apartado de las "callbacks" donde tenemos una secuencia de operaciones asíncronas que deben ser colocadas una detrás de otras, las promesas proporcionan unas cuantas recetas para resolverlo.
+
+```javascript
+new Promise(function(resolve, reject) {
+
+  setTimeout(() => resolve(1), 1000); // (*)
+
+}).then(function(result) { // (**)
+
+  alert(result); // 1
+  return result * 2;
+
+}).then(function(result) { // (***)
+
+  alert(result); // 2
+  return result * 2;
+
+}).then(function(result) {
+
+  alert(result); // 4
+  return result * 2;
+
+});
+```
+
+La idea es ir pasando el valor de .then() en .then().
+El flujo es el siguiente, la promesa inicial llama a resolve con 1, la función .then() es llamada y esta devuelve otro valor el cual es pasado al siguiente .then(), y así sucesivamente.
+
+Funciona, porque la llamada a promise.then devuelve una promesa asi que de esa manera se llama al siguiente .then.
+
+Ojo con esto, porque un error de novato es el siguiente:
+
+```javascript
+let promise = new Promise(function(resolve, reject) {
+  setTimeout(() => resolve(1), 1000);
+});
+
+promise.then(function(result) {
+  alert(result); // 1
+  return result * 2;
+});
+
+promise.then(function(result) {
+  alert(result); // 1
+  return result * 2;
+});
+
+promise.then(function(result) {
+  alert(result); // 1
+  return result * 2;
+});
+```
+
+Aquí no se están encadenando promesas, todos los .then son llamados por la misma promesa, así que todos mostrarán en este caso el mismo resultado. Aunque devuelvan todas un valor, no se llaman entre si.
+
+<h2>Retornando promesas</h2>
+
+Un controlador, utilizado en .then(controlador) puede crear y devolver una promesa.
+En ese caso, otros manejadores esperan hasta que se estabilice y luego obtienen su resultado.
+
+Por ejemplo:
+
+```javascript
+new Promise(function(resolve, reject) {
+
+  setTimeout(() => resolve(1), 1000);
+
+}).then(function(result) {
+
+  alert(result); // 1
+
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(result * 2), 1000);
+  });
+
+}).then(function(result) {
+
+  alert(result); // 2
+
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(result * 2), 1000);
+  });
+
+}).then(function(result) {
+
+  alert(result); // 4
+
+});
+```
+
+El primer .then muestra el 1 y devuelve una promesa, la cual, despues de 1 segundo se resuelve con el resultado anterior multiplicado por 2, esta cuando se resuelva hará lo mismo que la anterior pero con el nuevo resultado, etc.
+
+Devolviendo promesas se nos permite construir cadenas de acciones asíncronas.
+
+<h2>Usando el ejemplo de loadScript</h2>
+
+```javascript
+loadScript("/article/promise-chaining/one.js")
+.then(function(script) {
+  return loadScript("/article/promise-chaining/two.js");
+})
+.then(function(script) {
+  return loadScript("/article/promise-chaining/three.js");
+})
+.then(function(script) {
+  // use functions declared in scripts
+  // to show that they indeed loaded
+  one();
+  two();
+  three();
+});
+```
+  
+El código se puede acortar utilizando funciones flecha:
+  
+```javascript
+loadScript("/article/promise-chaining/one.js")
+.then(script => loadScript("/article/promise-chaining/two.js"))
+.then(script => loadScript("/article/promise-chaining/three.js"))
+.then(script => {
+  // scripts are loaded, we can use functions declared there
+  one();
+  two();
+  three();
+});
+```
+
+De esta manera, al llamar a loadScript, cargará el primer script y al hacerlo, llama a .then y acto seguido a loadScript otra vez con otro script, al cargar este y resolverse, llama al siguiente .then y asi sucesivamente.
+
+técnicamente se puede añadir .then directamente a cada loadScript de la siguiente manera:
+
+```javascript
+loadScript("/article/promise-chaining/one.js").then(script1 => {
+  loadScript("/article/promise-chaining/two.js").then(script2 => {
+    loadScript("/article/promise-chaining/three.js").then(script3 => {
+      // this function has access to variables script1, script2 and script3
+      one();
+      two();
+      three();
+    });
+  });
+});
+```
+
+Aunque de esta manera, el programa crece hacia la derecha y ocurre lo mismo que con las "callbacks". Los tres programas hacen lo mismo.
