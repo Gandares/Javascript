@@ -730,20 +730,28 @@ Promise.all(requests)
 Un ejemplo más grande es obtener con un vector de usuarios obtener sus datos en formato json de github y a partir de aquí sacar lo que sea.
 
 ```javascript
-let names = ['Gandares', 'pepe', 'juan'];
+let names = ['Gandares', 'crguezl'];
 
 let requests = names.map(name => fetch(`https://api.github.com/users/${name}`));
 
 Promise.all(requests)
   .then(responses => {
-    // todo se resolvió
     for(let response of responses) {
-      alert(`${response.url}: ${response.status}`); // Muestra 200 por cada url
+      alert(`${response.url}: ${response.status}`); //Muestra url y un 200 si logra conectarse
     }
 
     return responses;
   })
-  // mapea un vector de responses en un vector de responses.json() para leer su contenido
-  .then(responses => Promise.all(responses.map(r => r.json())))
-  .then(users => users.forEach(user => alert(user.name)));
+  .then(responses => Promise.all(responses.map(r => r.json()))) // Se analiza en json
+  .then(users => users.forEach(user => { // Mostramos los datos que queramos
+    let info = document.createElement('div');
+    info = user.login + ": " + user.bio + " con " + user.public_repos + " repositorios -> ";
+    document.body.append(info);
+    let img = document.createElement('img');
+    img.src = user.avatar_url;
+    img.style.width = "100px";
+    document.body.append(img);
+    let p = document.createElement('p')
+    document.body.append(p);
+  }));
 ```
