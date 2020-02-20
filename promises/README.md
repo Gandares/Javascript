@@ -685,3 +685,65 @@ new Promise(function() {
 ```
 
 Al no existir un .catch, "unhandledrejection" se activa. Normalmente estos errores no se pueden recuperar, así que lo mejor es informar del fallo. En entornos sin buscador como Node.js hay otras maneras de cazar estos errores.
+
+<h1>Promise API</h1>
+
+<h2>Promise.all</h2>
+
+Sirve para ejecutar varias promesas en paralelo y esperar hasta que estén todas listas. La sintaxis es:
+
+```javascript
+let promise = Promise.all([...promises...]);
+```
+
+Toma un vector de promesas como parámetro y retorna una promesa. Dicha promesa se resuelve cuando todas acaben y el vector de sus resultados es el parámetro devuelto.
+
+```javascript
+Promise.all([
+  new Promise(resolve => setTimeout(() => resolve(1), 3000)), // 1
+  new Promise(resolve => setTimeout(() => resolve(2), 2000)), // 2
+  new Promise(resolve => setTimeout(() => resolve(3), 1000))  // 3
+]).then(alert); // 1,2,3
+```
+
+El orden del vector resultante es igual al de las promesas aunque estas tengan tiempos distintos de resolución.
+
+Un truco común es mapear un conjunto de datos de trabajo en un conjunto de promesas, y luego envolverlo en Promise.all.
+
+```javascript
+let urls = [
+  'https://api.github.com/users/Gandares',
+  'https://api.github.com/users/pepe',
+  'https://api.github.com/users/juan'
+];
+
+// mapear cada url a un fetch(url) (recordar que fetch devuelve una promesa)
+let requests = urls.map(url => fetch(url));
+
+// Promise.all espera hasta que acabe cada promesa
+Promise.all(requests)
+  .then(responses => responses.forEach(
+    response => alert(`${response.url}: ${response.status}`)
+  ));
+```
+
+Un ejemplo más grande es obtener con un vector de usuarios obtener sus datos en formato json de github y a partir de aquí sacar lo que sea.
+
+```javascript
+let names = ['Gandares', 'pepe', 'juan'];
+
+let requests = names.map(name => fetch(`https://api.github.com/users/${name}`));
+
+Promise.all(requests)
+  .then(responses => {
+    // todo se resolvió
+    for(let response of responses) {
+      alert(`${response.url}: ${response.status}`); // Muestra 200 por cada url
+    }
+
+    return responses;
+  })
+  // mapea un vector de responses en un vector de responses.json() para leer su contenido
+  .then(responses => Promise.all(responses.map(r => r.json())))
+  .then(users => users.forEach(user => alert(user.name)));
+```
