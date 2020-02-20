@@ -542,7 +542,7 @@ En resumen, si un manejador retorna una promesa, el resto de la cadena espera ha
 
 Las cadenas de promesas son buenos a la hora del manejo de errores, principalmente porque el .catch no tiene porque ir immediatamente, puede ir despues de varios .then.
 
-```
+```javascript
 fetch('/ruta/hacia/archivo/algo.json')
   .then(response => response.json())
   .then(user => fetch(`https://api.github.com/users/${user.name}`))
