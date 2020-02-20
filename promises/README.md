@@ -401,3 +401,35 @@ loadScript("/article/promise-chaining/one.js").then(script1 => {
 ```
 
 Aunque de esta manera, el programa crece hacia la derecha y ocurre lo mismo que con las "callbacks". Los tres programas hacen lo mismo.
+
+Para ser precisos, un controlador, .then, .catch, .finally, pueden no devolver una promesa exactamente, sino los llamados “thenable”, objetos que tienen un método .then y son tratados igual que una promesa.
+
+```javascript
+class Thenable {
+  constructor(num) {
+    this.num = num;
+  }
+  then(resolve, reject) {
+    alert(resolve); // function() { código }
+    setTimeout(() => resolve(this.num * 2), 1000); // (**)
+  }
+}
+
+new Promise(resolve => resolve(1))
+  .then(result => {
+    return new Thenable(result); // (*)
+  })
+  .then(alert); // mostrar "2" despues de 1 segundo
+```
+
+Javascript observa el objeto devuelto en .then de la promesa, si este último tiene un método llamado then, se ejecutará de manera similar al ejecutor.
+
+<h2>Ejemplo con fetch</h2>
+
+En el "frontend", las promesas son utilizadas generalmente para solicitudes de red
+
+```javascript
+let promise = fetch(url);
+```
+
+fetch() proporciona una forma fácil y lógica de obtener recursos de forma asíncrona por la red y retorna una promesa.
