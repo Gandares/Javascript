@@ -432,4 +432,108 @@ En el "frontend", las promesas son utilizadas generalmente para solicitudes de r
 let promise = fetch(url);
 ```
 
-fetch() proporciona una forma fácil y lógica de obtener recursos de forma asíncrona por la red y retorna una promesa.
+fetch() proporciona una forma fácil y lógica de obtener recursos de forma asíncrona por la red y retorna una promesa la cual resuelve con el valor "response". Para leer la respuesta se debe usar response.text() el cual devuelve una promesa la cual resuelve cuando el texto es descargado del servidor remoto.
+
+El siguiente código nos permite ver el contenido de por ejemplo un archivo .json:
+
+```javascript
+fetch('/ruta/hacia/archivo/algo.json')
+  // .then ejecutará cuando el servidor remoto responda
+  .then(function(response) {
+    // response.text() retorna una new promise que resuelve con el texto completo de response cuando cargue
+    return response.text();
+  })
+  .then(function(text) {
+    // ...y se visualiza el contenido del archivo
+    alert(text);
+  });
+```
+
+El objeto response del fetch, tiene un método response.json() el cual analiza el archivo como un .json, en nuestro caso como lo hacemos con un archivo .json es más conveniente.
+
+```javascript
+// Igual que antes pero con response.json()
+fetch('/ruta/hacia/archivo/algo.json')
+  .then(response => response.json())
+  .then(algo => alert(algo.name)); // Por ejemplo si el json contiene un campo name
+```
+
+Ahora hagamos un fetch a un archivo .json que contenga mi nombre de usuario de github y mostremos la foto de perfil.
+
+```javascript
+// Make a request for user.json
+fetch('/ruta/hacia/archivo/algo.json')
+  // Lo carga como un json
+  .then(response => response.json())
+  // Hace una solicitud a su github
+  .then(user => fetch(`https://api.github.com/users/${user.name}`))
+  // Carga "response" como un json
+  .then(response => response.json())
+  // Muestra el icono del perfil (githubUser.avatar_url) por 3 segundos
+  .then(githubUser => {
+    let img = document.createElement('img');
+    img.src = githubUser.avatar_url;
+    img.className = "promise-avatar-example";
+    document.body.append(img);
+
+    setTimeout(() => img.remove(), 3000); // (*)
+  });
+```
+
+¿Como podemos mostrar algo después de que la imagen desaparezca? Para hacerlo, debemos retornar otra promesa cuando la imagen se borre.
+
+```javascript
+fetch('/article/promise-chaining/user.json')
+  .then(response => response.json())
+  .then(user => fetch(`https://api.github.com/users/${user.name}`))
+  .then(response => response.json())
+  .then(githubUser => new Promise(function(resolve, reject) { // (*)
+    let img = document.createElement('img');
+    img.src = githubUser.avatar_url;
+    img.className = "promise-avatar-example";
+    document.body.append(img);
+
+    setTimeout(() => {
+      img.remove();
+      resolve(githubUser); // (**)
+    }, 3000);
+  }))
+  // Se activa después de 3 segundos
+  .then(githubUser => alert(`Finished showing ${githubUser.name}`))
+```
+
+Y ahora podemos por ejemplo dividir el código para hacer funciones reutilizables:
+
+```javascript
+function loadJson(url) {
+  return fetch(url)
+    .then(response => response.json());
+}
+
+function loadGithubUser(name) {
+  return fetch(`https://api.github.com/users/${name}`)
+    .then(response => response.json());
+}
+
+function showAvatar(githubUser) {
+  return new Promise(function(resolve, reject) {
+    let img = document.createElement('img');
+    img.src = githubUser.avatar_url;
+    img.className = "promise-avatar-example";
+    document.body.append(img);
+
+    setTimeout(() => {
+      img.remove();
+      resolve(githubUser);
+    }, 3000);
+  });
+}
+
+// Use them:
+loadJson('/article/promise-chaining/user.json')
+  .then(user => loadGithubUser(user.name))
+  .then(showAvatar)
+  .then(githubUser => alert(`Finished showing ${githubUser.name}`));
+```
+
+En resumen, si un manejador retorna una promesa, el resto de la cadena espera hasta que se resuelva y el resultado o error se pasa.
