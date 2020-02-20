@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<script>
+'use strict';
+
+let names = ['Gandares', 'crguezl'];
+
+let requests = names.map(name => fetch(`https://api.github.com/users/${name}`));
+
+Promise.all(requests)
+  .then(responses => {
+    for(let response of responses) {
+      alert(`${response.url}: ${response.status}`);
+    }
+
+    return responses;
+  })
+  .then(responses => Promise.all(responses.map(r => r.json())))
+  .then(users => users.forEach(user => {
+    let info = document.createElement('div');
+    info = user.login + ": " + user.bio + " con " + user.public_repos + " repositorios -> ";
+    document.body.append(info);
+    let img = document.createElement('img');
+    img.src = user.avatar_url;
+    img.style.width = "100px";
+    document.body.append(img);
+    let p = document.createElement('p')
+    document.body.append(p);
+  }));
+</script>
+</html>
