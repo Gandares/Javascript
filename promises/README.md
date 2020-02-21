@@ -920,3 +920,25 @@ Esto acepta una función la cual use una "callback" y la promisifica. Aquí supo
 ¿Pero que ocurre si la función f espera más argumentos? Se tendría que hacer otra función, al igual que si en vez de más argumentos, espere menos.
 
 Existen módulos que contienen funciones que promisifican de manera más flexible -> [es6-promisify](https://github.com/digitaldesignlabs/es6-promisify)
+
+<h1>Microtasks</h1>
+
+Los manejadores de las promesas, .then, .catch y .finally son asíncronos.
+
+Incluso cuando una Promesa se resuelva de inmediato, el código en las líneas debajo de .then, .catch o .finally se ejecutará antes que estos manejadores.
+
+Un ejemplo:
+
+```javascript
+let promise = Promise.resolve();
+
+promise.then(() => alert("promise done!"));
+
+alert("code finished"); // Este "alert" se mostrará primero
+```
+
+Esto se debe a que las tareas asincrónicas necesitan una gestión adecuada. Para eso, el estándar ECMA especifica una cola interna "PromiseJobs", conocida como la "microtask queue".
+
+La cola es FIFO: las tareas que esten primero en la cola se ejecutan antes. La ejecución de una tarea se inicia solo cuando no se está ejecutando nada más. Cuando una promesa está lista, sus manejadores se ponen en la cola; aún no se ejecutan. Cuando el motor de JavaScript se libera del código actual, toma una tarea de la cola y la ejecuta. Esto explica el ejemplo anterior.
+
+Si hay una cadena con múltiples .then, catch, finally, entonces cada uno de ellos se ejecuta de forma asíncrónica. Es decir, primero se pone en cola, luego se ejecuta cuando se completa el código actual y se finalizan los controladores previamente en cola.
