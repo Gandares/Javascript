@@ -849,3 +849,74 @@ let promise = new Promise((resolve, reject) => reject(error));
 ```
 
 En práctica es casi nunca utilizado.
+
+<h1>Promisificación</h1>
+
+Es la conversión de una función que acepta una "callback" en una función que devuelve una promesa.
+
+Tales transformaciones a menudo son necesarias, ya que muchas funciones y bibliotecas se basan en "callbacks". Pero las promesas son más convenientes, así que tiene sentido promisificarlas.
+
+Usemos el ejemplo de "loadScript()":
+
+```javascript
+function loadScript(src, callback) {
+  let script = document.createElement('script');
+  script.src = src;
+
+  script.onload = () => callback(null, script);
+  script.onerror = () => callback(new Error(`Script load error for ${src}`));
+
+  document.head.append(script);
+}
+
+// Modo de uso:
+// loadScript('path/script.js', (err, script) => {...})
+```
+
+Vamos a promisificarla. La nueva función loadScriptPromise (src) logra el mismo resultado, pero solo acepta src (sin "callback") y devuelve una promesa.
+
+```javascript
+let loadScriptPromise = function(src) {
+  return new Promise((resolve, reject) => {
+    loadScript(src, (err, script) => {
+      if (err) reject(err)
+      else resolve(script);
+    });
+  })
+}
+
+// Modo de uso:
+// loadScriptPromise('path/script.js').then(...)
+```
+
+Principalmente logramos una traducción de "callback" a promesa. En la práctica, probablemente necesitemos promisificar muchas funciones, por lo que tiene sentido usar un "helper".
+
+```javascript
+function promisify(f) {
+  return function (...args) { // return a wrapper-function
+    return new Promise((resolve, reject) => {
+      function callback(err, result) { // our custom callback for f
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
+        }
+      }
+
+      args.push(callback); // append our custom callback to the end of f arguments
+
+      f.call(this, ...args); // call the original function
+    });
+  };
+};
+
+// Modo de uso:
+// let loadScriptPromise = promisify(loadScript);
+// loadScriptPromise(...).then(...);
+```
+
+Esto acepta una función la cual use una "callback" y la promisifica. Aquí suponemos que la función original espera una "callback" con dos argumentos (err, result). Eso es lo que encontramos con más frecuencia. Entonces, nuestra "callback" personalizada está exactamente en el formato correcto, y "prosimify" que funciona muy bien para tal caso.
+
+¿Pero que ocurre si la función f espera más argumentos? Se tendría que hacer otra función, al igual que si en vez de más argumentos, espere menos.
+
+Existen módulos que contienen funciones que promisifican de manera más flexible -> [es6-promisify](https://github.com/digitaldesignlabs/es6-promisify)
