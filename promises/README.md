@@ -755,3 +755,97 @@ Promise.all(requests)
     document.body.append(p);
   }));
 ```
+
+Si alguna de las promesas es rechazada, "Promise.all" ignorará los resultados de las promesas restantes. Por eso es bueno usarse para casos de todo o nada, cuando necesitamos todos los resultados aceptados para poder continuar.
+
+
+<h2>Promise.allSettled</h2>
+
+"Promise.allSettled" espera a que todas las promesas acaben independientemente del resultado. El vector resultado tendrá
+ - {status:"fulfilled", value:result}   Para casos exitosos.
+ - {status:"rejected", reason:error}    Para errores.
+ 
+ ```javascript
+ let urls = [
+  'https://api.github.com/users/Gandares',
+  'https://api.github.com/users/crguezl',
+  'https://no-such-url'
+];
+
+Promise.allSettled(urls.map(url => fetch(url)))
+  .then(results => {
+    results.forEach((result, num) => {
+      if (result.status == "fulfilled") {
+        alert(`${urls[num]}: ${result.value.status}`);
+      }
+      if (result.status == "rejected") {
+        alert(`${urls[num]}: ${result.reason}`);
+      }
+    });
+  });
+ ```
+ 
+ El vector resultante(results) es el siguiente:
+ 
+ ```javascript
+[
+  {status: 'fulfilled', value: ...response...},
+  {status: 'fulfilled', value: ...response...},
+  {status: 'rejected', reason: ...error object...}
+]
+```
+ 
+Si el buscador no soporta "Promise.allSettled", se debe realizar la técnica del [Polyfill](https://medium.com/beginners-guide-to-mobile-web-development/introduction-to-polyfills-their-usage-9cd6db4b1923), que en este caso no es complicada de hacer.
+ 
+<h2>Promise.race</h2>
+
+Es similar a "Promise.all", pero el resultado será el resolve o reject del primero que acabe:
+
+```javascript
+Promise.race([
+  new Promise((resolve, reject) => setTimeout(() => resolve(1), 1000)),
+  new Promise((resolve, reject) => setTimeout(() => reject(new Error("Whoops!")), 2000)),
+  new Promise((resolve, reject) => setTimeout(() => resolve(3), 3000))
+]).then(alert); // 1
+```
+
+El resultado es "1" porque fue el más rapido en resolverse. Las demás promesas son ignoradas.
+
+<h2>Promise.resolve/reject</h2>
+
+<h3>Promise.resolve</h3>
+
+El método crea una promesa resuelta con un valor.
+
+```javascript
+let promise = new Promise(resolve => resolve(value));
+```
+
+El método se usa para compatibilidad, cuando se espera que una función devuelva una promesa.
+
+```javascript
+let cache = new Map();
+
+function loadCached(url) {
+  if (cache.has(url)) {
+    return Promise.resolve(cache.get(url)); // (*)
+  }
+
+  return fetch(url)
+    .then(response => response.text())
+    .then(text => {
+      cache.set(url,text);
+      return text;
+    });
+}
+```
+
+<h3>Promise.reject</h3>
+
+El método crea una promesa rechazada con un error.
+
+```javascript
+let promise = new Promise((resolve, reject) => reject(error));
+```
+
+En práctica es casi nunca utilizado.
