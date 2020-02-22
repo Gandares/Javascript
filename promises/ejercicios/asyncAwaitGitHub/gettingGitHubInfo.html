@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<head>
+   <meta charset="UTF-8">
+</head>
+<script>
+'use strict';
+
+async function showInfo() {
+
+  // read github user
+  let githubResponse = await fetch(`https://api.github.com/users/Gandares`);
+  let githubUser = await githubResponse.json();
+
+  // show the avatar
+  let info = document.createElement('div');
+  info = githubUser.login + ": " + githubUser.bio + " con " + githubUser.public_repos + " repositorios -> ";
+  document.body.append(info);
+  let img = document.createElement('img');
+  img.src = githubUser.avatar_url;
+  img.style.width = "100px";
+  document.body.append(img);
+
+  await new Promise((resolve, reject) => setTimeout(resolve, 3000));
+
+  img.remove();
+
+  return githubUser;
+}
+
+showInfo();
+</script>
