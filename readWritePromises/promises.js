@@ -53,4 +53,4 @@ Promise.all(vficheros.map(element => readwrite(element.indexOf(element))))
     })
     .catch(err => console.log(err));
 
-//NOPE
+//Todavia nop
