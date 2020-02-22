@@ -1073,7 +1073,7 @@ let user = await response.json();
 
 Se puede encapsular dentro de una función asíncrona, como se hizo en el ejemplo anterior de "showInfo()":
 
-```
+```javascript
 (async () => {
   let response = await fetch('/article/promise-chaining/user.json');
   let user = await response.json();
