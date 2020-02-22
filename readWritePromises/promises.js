@@ -21,34 +21,36 @@ program.collect.forEach(element => {
     }
 });
 
-var actual = 0;
 const limite = program.collect.length;
 
-var readWrite = () => {
+function readwrite(index){
     return new Promise(function(resolve,reject){
-        fs.readFile(program.collect[actual], (err, data) => {
+        fs.readFile(program.collect[index], (err, data) => {
             if (err) {
                 reject(err);
             }
             fs.appendFile(salida, data.toString(), (err) => {
                 if (err) {
-                reject(err);
-                }
-                actual++;
-                if(actual<limite){
-                    readWrite();
-                }
-                else{
-                    resolve();
+                   reject(err);
                 }
             });
-        });
+            resolve('ok');
+        })
     })
-    .then(() => {
+        .catch( err => console.error(err));
+}
+
+console.log(1)
+
+var vficheros = new Array(limite);
+
+console.log(1)
+
+Promise.all(vficheros.map(element => readwrite(element.indexOf(element))))
+    .then( () => {
         const cat = spawn('cat', [salida]);
         cat.stdout.pipe(process.stdout);
     })
-    .catch((err) => console.error(err));
-};
+    .catch(err => console.log(err));
 
-readWrite();
+//NOPE
