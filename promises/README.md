@@ -942,3 +942,214 @@ Esto se debe a que las tareas asincrónicas necesitan una gestión adecuada. Par
 La cola es FIFO: las tareas que esten primero en la cola se ejecutan antes. La ejecución de una tarea se inicia solo cuando no se está ejecutando nada más. Cuando una promesa está lista, sus manejadores se ponen en la cola; aún no se ejecutan. Cuando el motor de JavaScript se libera del código actual, toma una tarea de la cola y la ejecuta. Esto explica el ejemplo anterior.
 
 Si hay una cadena con múltiples .then, catch, finally, entonces cada uno de ellos se ejecuta de forma asíncrónica. Es decir, primero se pone en cola, luego se ejecuta cuando se completa el código actual y se finalizan los controladores previamente en cola.
+
+<h1>Async/await</h1>
+
+Hay una sintaxis especial para trabajar con las promesas de una manera más cómoda, llamada "async/await".
+
+<h2>funciones async</h2>
+
+La palabra clave "async" puede ser colocada delante de una función de la siguiente manera:
+
+```javascript
+async function f() {
+  return 1;
+}
+```
+
+La palabra "async" antes de una función significa que dicha función siempre devuelve una promesa. Otros valores se envuelven en una promesa resuelta automáticamente.
+
+```javascript
+async function f() {
+  return 1;
+}
+
+f().then(alert);
+```
+
+También es posible devolver la promesa de manera explícita:
+
+```javascript
+async function f() {
+  return Promise.resolve(1);
+}
+
+f().then(alert); // 1
+```
+
+<h2>Await</h2>
+
+La sintaxis es:
+
+```javascript
+// Funciona solo dentro de funciones asíncronas
+let value = await promise;
+```
+
+La palabra clave "await" hace que JavaScript espere hasta que se cumpla esa promesa y devuelva su resultado.
+
+```javascript
+async function con() {
+
+    let promise = new Promise((resolve, reject) => {
+      setTimeout(() => resolve("done!"), 1000)
+    });
+  
+    let result = await promise;
+    console.log(result);
+}
+ 
+async function sin() {
+
+    let promise = new Promise((resolve, reject) => {
+      setTimeout(() => resolve("done!"), 1000)
+    });
+  
+    let result = promise;
+    console.log(result);
+}
+
+con();
+sin();
+```
+
+La función con(), con "await" espera a que la promesa sea resuelta antes de almacenar su valor en "result". De esta manera, esta función imprime "done!" por pantalla.
+
+Sin embargo la función sin al no llevarlo, se almacena el resultado antes de saberlo en la variable "result". Así que muestra que la devolución de la promesa todavía esta pendiente.
+
+Al ejecutar el código se muestra
+
+```
+Promise { <pending> }
+done!
+```
+
+"Await" hace que JavaScript espere hasta que se cumpla la promesa, y luego continúa con el resultado. Eso no cuesta ningún recurso de CPU, porque el motor puede hacer otros trabajos mientras tanto: ejecutar otros scripts, manejar eventos, etc.
+
+Si se intenta usar en funciones no asíncronas mostrara un error en la sintaxis del programa:
+
+```javascript
+function f() {
+  let promise = Promise.resolve(1);
+  let result = await promise; // Syntax error
+}
+```
+
+Realizaremos el ejemplo que realizamos con "Promise.all" donde se mostraban datos de github, pero usando "async" y "await":
+
+```javascript
+async function showInfo() {
+
+  // Leer el usuario
+  let githubResponse = await fetch(`https://api.github.com/users/Gandares`);
+  let githubUser = await githubResponse.json();
+
+  // Se muestra la información por pantalla (Usuario, bio y avatar)
+  let info = document.createElement('div');
+  info = githubUser.login + ": " + githubUser.bio + " con " + githubUser.public_repos + " repositorios -> ";
+  document.body.append(info);
+  let img = document.createElement('img');
+  img.src = githubUser.avatar_url;
+  img.style.width = "100px";
+  document.body.append(img);
+
+  // Se borra la foto a los 3 segundos
+  await new Promise((resolve, reject) => setTimeout(resolve, 3000));
+
+  img.remove();
+
+  return githubUser;
+}
+
+showInfo();
+```
+
+Recordar que "await" no puede ser usado fuera de una función, eso da error de sintaxis:
+
+```javascript
+let response = await fetch('/article/promise-chaining/user.json');
+let user = await response.json();
+```
+
+Se puede encapsular dentro de una función asíncrona, como se hizo en el ejemplo anterior de "showInfo()":
+
+```
+(async () => {
+  let response = await fetch('/article/promise-chaining/user.json');
+  let user = await response.json();
+  ...
+})();
+```
+
+También acepta “thenables” y se pueden declarar métodos de clase asíncronos.
+
+```javascript
+class Waiter {
+  async wait() {
+    return await Promise.resolve(1);
+  }
+}
+
+new Waiter()
+  .wait()
+  .then(alert); // 1
+```
+
+<h2>Manejo de errores</h2>
+
+Si una promesa se resuelve normalmente, entonces "await" devuelve el resultado. Pero en el caso de un rechazo, arroja el error, como si hubiera una declaración de "throw" en esa línea. Los dos siguientes códigos son equivalentes:
+
+```javascript
+async function f() {
+  await Promise.reject(new Error("Whoops!"));
+}
+```
+
+```javascript
+async function f() {
+  throw new Error("Whoops!");
+}
+```
+
+En situaciones reales, la promesa puede tomar algún tiempo antes de rechazarla. En ese caso, habrá una demora antes de que la espera arroje un error.
+
+Podemos detectar ese error usando "try..catch", de la misma manera que un "throw" normal:
+
+```
+async function f() {
+
+  try {
+    let response = await fetch('http://no-such-url');
+  } catch(err) {
+    alert(err); // TypeError: NetworkError when attempting to fetch resource.
+  }
+}
+
+f();
+```
+
+Se pueden meter multiples líneas dentro del bloque "try".
+
+Se puede usar también el manejador .catch de las promesas para manejarlo:
+
+```javascript
+async function f() {
+  let response = await fetch('http://no-such-url');
+}
+
+// f() becomes a rejected promise
+f().catch(alert); // TypeError: NetworkError when attempting to fetch resource.
+```
+
+Si nos olvidamos de colocar el .catch, recordar que "unhandledrejection" lo puede cazar, como se explicó anteriormente.
+
+También es posible usar "await" con "Promise.all":
+
+```javascript
+let results = await Promise.all([
+  fetch(url1),
+  fetch(url2),
+  ...
+]);
+```
+
